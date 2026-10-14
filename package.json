@@ -1,0 +1,38 @@
+{
+  "name": "timesheet-demo",
+  "private": true,
+  "workspaces": [
+    "packages/api-contract",
+    "backend",
+    "frontend",
+    "e2e"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "generate:api-types": "npm run generate -w @timesheet/api-contract",
+    "typecheck": "npm run typecheck -w backend && npm run typecheck -w frontend && npm run typecheck -w e2e",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "build": "npm run build -w frontend && npm run build -w backend",
+    "test:unit": "npm run test:unit -w backend",
+    "test:integration": "npm run test:integration -w backend",
+    "test:api": "npm run test:api -w backend",
+    "test:web": "npm run test -w frontend",
+    "test:e2e": "npm run test -w e2e",
+    "perf:smoke": "npm run perf:smoke -w backend"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.1"
+  }
+}

@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Database integration tests (Testcontainers)
+        run: npm run test:integration
+
+      - name: API tests (Supertest)
+        run: npm run test:api
+
+      - name: Frontend tests (React Testing Library)
+        run: npm run test:web
+
+      - name: Contract check (generated types match openapi.yaml)
+        run: |
+          npm run generate:api-types
+          git diff --exit-code packages/api-contract/src/schema.d.ts
+
+      - name: Build
+        run: npm run build
+
+      - name: Docker image build
+        run: docker build .
+
+      - name: Start Compose stack
+        run: |
+          cp .env.example .env
+          docker compose up -d --build --wait app
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+        working-directory: e2e
+
+      - name: End-to-end tests (Playwright)
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 7
+
+      - name: Stop Compose stack
+        if: always()
+        run: docker compose down -v
+
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+
+      # SonarQube analysis is deferred (Constitution v1.3.0, Decisions Pending).

@@ -1,0 +1,46 @@
+services:
+  db:
+    # Must match POSTGRES_IMAGE in backend/tests/support/postgres.ts.
+    image: postgres:16.10-alpine
+    env_file: .env
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build: .
+    env_file: .env
+    command:
+      [
+        'npx',
+        '--no-install',
+        'node-pg-migrate',
+        'up',
+        '-m',
+        '/app/backend/migrations',
+        '--migration-file-language',
+        'sql',
+      ]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build: .
+    env_file: .env
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
